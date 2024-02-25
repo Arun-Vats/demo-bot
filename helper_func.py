@@ -84,6 +84,28 @@ async def get_message_id(client, message):
     else:
         return 0
 
+async def search_in_channel(client, message):
+    try:
+        await message.reply_text("Please enter the file name you want to search for.")
+        response = await client.wait_for("message", timeout=30)
+        file_name = response.text.strip()
+        if not file_name:
+            await message.reply_text("You did not enter any file name.")
+            return
+        search_results = []
+        async for msg in client.search_messages(chat_id=client.db_channel.id, query=file_name):
+            search_results.append(msg)
+        if not search_results:
+            await message.reply_text("No files found with the given name.")
+            return
+        buttons = [
+            [f"{msg.document.file_name}" for msg in search_results]
+        ]
+        await message.reply_text("Here are the search results. Select the file you want to download:", reply_markup=InlineKeyboardMarkup(buttons))
+    except asyncio.TimeoutError:
+        await message.reply_text("You took too long to respond.")
+    except Exception as e:
+        await message.reply_text(f"An error occurred: {str(e)}")
 
 def get_readable_time(seconds: int) -> str:
     count = 0
